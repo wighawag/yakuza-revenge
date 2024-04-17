@@ -7,7 +7,7 @@
 pragma solidity >=0.8.21;
 
 import { System } from "@latticexyz/world/src/System.sol";
-import { YakuzaServiceExpiry, IsYakuzaAsteroid,YakuzaServicePendingClaim } from "../codegen/index.sol";
+import { YakuzaClaims, IsYakuzaAsteroid,YakuzaServicePendingClaim } from "../codegen/index.sol";
 // import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { WorldResourceIdLib, ROOT_NAMESPACE } from "@latticexyz/world/src/WorldResourceId.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
@@ -30,7 +30,7 @@ contract YakuzaRevengeSystem is System {
   /**
    * @dev Send the resouce from orbit. On success if enough iron. Then, set expiry.
    */
-  function sendResources(bytes32 fleetID, bytes32 yakuzaAsteroidID, uint256 resourceValue) external{
+  function sendResources(bytes32 fleetID, bytes32 toProtectAsteroidID, bytes32 yakuzaAsteroidID, uint256 resourceValue) external{
 
     // EResource.Iron;
 
@@ -50,16 +50,7 @@ contract YakuzaRevengeSystem is System {
     // require(IWorld(_world).Primodium_PrimodiumSystem_ResourceCount.get(playerEntity, EResource.Iron) > resourceValue, "You don't have enough iron");
 
 
-    // check yakuzaAsteroidID is owned by no one or yakuza contract.
-    if (IsYakuzaAsteroid.get(yakuzaAsteroidID) == false) {
-      // check if the asteroid is free
-      // require(IsFleetEmpty(yakuzaAsteroidID), "That asteroid is not empty");
-      
-      // set the asteroid to be owned by the yakuza
-      IsYakuzaAsteroid.set(yakuzaAsteroidID, true);
-    }
-
-    require(IsYakuzaAsteroid.get(yakuzaAsteroidID) == true, "YakuzaAsteroid is not owned by Yakuza");
+    require(IsYakuzaAsteroid.get(yakuzaAsteroidID), "YakuzaAsteroid is not owned by Yakuza");
 
 
     uint256[] memory resourceCounts = new uint256[](2);
@@ -70,19 +61,26 @@ contract YakuzaRevengeSystem is System {
     require(IFleetMoveSystem.transferResourcesFromFleetToSpaceRock(fleetID, yakuzaAsteroidID, resourceCounts),
       "Failed to transfer resources from fleet to space rock");
 
-    uint64 expiry = block.timestamp + 1 days * (resourceValue);
+    uint64 extra = block.timestamp + 1 days * (resourceValue);
+
+    address asteroidOnwer = address(0); //  toProtectAsteroidID
+    
 
     // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
-    YakuzaServiceExpiry.set(yakuzaAsteroid, expiry, playerEntity);
+    YakuzaClaimsData memory data = YakuzaClaims.get(toProtectAsteroidID);
+    data.expiry = expiry + extra;
+    data.owner = asteroidOnwer;
+    data.claimed = false;
+    YakuzaClaims.set(asteroidID, data);
   }
 
   function claim(bytes32 yakuzaAsteroidID, bytes32 asteroidID)external {
     Iworld world = IWorld(_world());
 
     if (IsYakuzaAsteroid.get(yakuzaAsteroidID)) {
-      YakuzaServiceExpiryData memory expiryData = YakuzaServiceExpiry.get(asteroidID);
-      if (expiryData.expiry  > block.timestamp()) {
-        address member = expiryData.owner;
+      YakuzaClaimsData memory claimData = YakuzaClaims.get(asteroidID);
+      if (claimData.expiry  > block.timestamp() && !claimData.claimed) {
+        address member = claimData.owner;
         if (member == _msgSender()) {
           address currentAsteroidOwner =  address(0); // TODO
           if (currentAsteroidOwner == member) {

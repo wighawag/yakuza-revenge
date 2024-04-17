@@ -10,13 +10,14 @@ export default mudConfig({
     },
   },
   tables: {
-    YakuzaServiceExpiry: {
+    YakuzaClaims: {
       keySchema: {
         asteroid: "bytes32",
       },
       valueSchema: {
-        expiry: "uint256",
-        owner: "address"
+        expiry: "uint64",
+        owner: "address",
+        claimed: "bool"
       }
     },
     YakuzaServicePendingClaim: {

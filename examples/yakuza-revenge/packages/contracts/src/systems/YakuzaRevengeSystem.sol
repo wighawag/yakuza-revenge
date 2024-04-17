@@ -74,6 +74,9 @@ contract YakuzaRevengeSystem is System {
     YakuzaClaims.set(asteroidID, data);
   }
 
+  /// @notice to be called when you previously claimed a revenge attack but the revenge did not manage to capture the atseroid back
+  ///  and you capture back by your own means. This is to allow the Yakuza System to know that you can claim again if you lost the asteroid again.
+  /// @param asteroidID asteroid to reclaim protection for
   function notifyOwnership(bytes32 asteroidID) external {
     address asteroidOwner = address(0); //  asteroidID
 
@@ -83,6 +86,10 @@ contract YakuzaRevengeSystem is System {
     YakuzaClaims.set(asteroidID, data);
   }
 
+  /// @notice to be called when you lose a registered asterattack but the revenge did not manage to capture the atseroid back
+  ///  and you capture back by your own means. This is to allow the Yakuza System to know that you can claim again if you lost the asteroid again.
+  /// @param yakuzaAsteroidID asteroid owned by yakuza from which to send the fleet
+  /// @param asteroidID asteroid to capture back
   function claim(bytes32 yakuzaAsteroidID, bytes32 asteroidID)external {
     Iworld world = IWorld(_world());
 
@@ -107,6 +114,9 @@ contract YakuzaRevengeSystem is System {
     
   }
 
+
+  /// @notice to call after the fleet arrive in orbit (as a result of calling `claim`)
+  /// @param claimID claimId representing the pending claim
   function finalizeClainm(bytes32 claimID) external{
     // send from orbit to ground
   }

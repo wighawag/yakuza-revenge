@@ -9,8 +9,10 @@ pragma solidity >=0.8.21;
 import { System } from "@latticexyz/world/src/System.sol";
 import { YakuzaClaims, YakuzaClaimsData, IsYakuzaAsteroid, YakuzaServicePendingClaim, YakuzaServicePendingClaimData } from "../codegen/index.sol";
 import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
+import { OwnedBy } from "../codegen/index.sol";
 import { WorldResourceIdLib, ROOT_NAMESPACE } from "@latticexyz/world/src/WorldResourceId.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
+import { IWorld } from "../codegen/world/IWorld.sol";
 import { IWorld as IPrimodiumWorld } from "../primodium-codegen/world/IWorld.sol";
 import { LibHelpers } from "../libraries/LibHelpers.sol";
 // import { BuildingTileKey } from "../libraries/Keys.sol";
@@ -64,10 +66,10 @@ contract YakuzaRevengeSystem is System {
     // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
     YakuzaClaimsData memory data = YakuzaClaims.get(toProtectAsteroidID);
     require(data.owner == asteroidOwner || data.owner == address(0) || data.expiry < block.timestamp, "claim already owned");
-    data.expiry = data.expiry < block.timestamp ? block.timestamp + extra : expiry + extra;
+    data.expiry = uint64(data.expiry < block.timestamp ? block.timestamp + extra : data.expiry + extra);
     data.owner = asteroidOwner;
     data.claimed = false;
-    YakuzaClaims.set(asteroidID, data);
+    YakuzaClaims.set(toProtectAsteroidID, data);
   }
 
   /// @notice to be called when you previously claimed a revenge attack but the revenge did not manage to capture the atseroid back
@@ -75,7 +77,7 @@ contract YakuzaRevengeSystem is System {
   /// @param asteroidID asteroid to reclaim protection for
   function notifyOwnership(bytes32 asteroidID) external {
 
-    StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
+    StoreSwitch.setStoreAddress(_world()); // sets the store address to the world address
     address asteroidOwner = address(uint160(uint256(OwnedBy.get(asteroidID))));
 
     YakuzaClaimsData memory data = YakuzaClaims.get(asteroidID);
@@ -89,14 +91,14 @@ contract YakuzaRevengeSystem is System {
   /// @param yakuzaAsteroidID asteroid owned by yakuza from which to send the fleet
   /// @param asteroidID asteroid to capture back
   function claim(bytes32 yakuzaAsteroidID, bytes32 asteroidID)external {
-    StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
-    Iworld world = IWorld(_world());
+    StoreSwitch.setStoreAddress(_world()); // sets the store address to the world address
+    IWorld world = IWorld(_world());
 
     require(IsYakuzaAsteroid.get(yakuzaAsteroidID), "not yakuza");
     
     YakuzaClaimsData memory claimData = YakuzaClaims.get(asteroidID);
     
-    require(claimData.expiry  > block.timestamp(), "expired");
+    require(claimData.expiry  > block.timestamp, "expired");
     require(!claimData.claimed, "already claimed");
 
     address member = claimData.owner;  
@@ -133,7 +135,7 @@ contract YakuzaRevengeSystem is System {
     require(!pendingClaim.sent, "already sent");
   
     pendingClaim.sent = true;
-    ResourceId fleetCombatSystemID = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "IFleetCombatSystem");
+    ResourceId fleetCombatSystemID = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "IFleetCombatSys");
     bytes memory data = IPrimodiumWorld(_world()).call(fleetCombatSystemID,
       abi.encodeWithSignature("attack(bytes32,bytes32)", pendingClaim.fleetID, asteroidID)
     );
@@ -141,7 +143,7 @@ contract YakuzaRevengeSystem is System {
 
    /// @notice to call after claim is finalize to return fleet to base if any
   /// @param claimID claimId representing the pending claim
-  function returnFleet(bytes32 claimID) external{
+  function returnFleet(bytes32 claimID, bytes32 yakuzaAsteroidID, bytes32 asteroidID) external{
     
     ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
     bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,

@@ -15,12 +15,12 @@ import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { UpgradeBounty } from "../src/codegen/index.sol";
 import { IStore } from "@latticexyz/store/src/IStore.sol";
 import { StoreSwitch } from "@latticexyz/store/src/StoreSwitch.sol";
-import { UpgrBounSystem } from "../src/systems/UpgrBounSystem.sol";
+import { YakuzaRevengeSystem } from "../src/systems/YakuzaRevengeSystem.sol";
 
 import { IWorld } from "../src/codegen/world/IWorld.sol";
 import { PositionData } from "../src/codegen/index.sol";
 
-contract UpgradeBountyExtensionTest is Test {
+contract YakuzaRevengeExtensionTest is Test {
   uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_ALICE");
   address deployerAddress = vm.envAddress("ADDRESS_ALICE");
   address worldAddress = vm.envAddress("WORLD_ADDRESS");
@@ -55,17 +55,17 @@ contract UpgradeBountyExtensionTest is Test {
     StoreSwitch.setStoreAddress(worldAddress); // sets the store address to the world address
     UpgradeBounty.register(); // registers the UpgradeBounty table to the world address
 
-    UpgrBounSystem upgrBounSystem = new UpgrBounSystem(); // creates/deploys a new UpgrBounSystem contract, store its address
-    console.log("UpgrBounSystem address: ", address(upgrBounSystem));
+    YakuzaRevengeSystem system = new YakuzaRevengeSystem(); // creates/deploys a new UpgrBounSystem contract, store its address
+    console.log("YakuzaRevengeSystem address: ", address(system));
 
     // Does registerSystem return a ResourceId?
-    primodiumWorld.registerSystem(systemResource, upgrBounSystem, false); // registers the UpgrBounSystem contract address to the UpgrBounSystem namespace and resourceID in the world address
+    primodiumWorld.registerSystem(systemResource, system, false); // registers the UpgrBounSystem contract address to the UpgrBounSystem namespace and resourceID in the world address
 
-    primodiumWorld.registerFunctionSelector(systemResource, "depositBounty((int32,int32,bytes32))");
-    primodiumWorld.registerFunctionSelector(systemResource, "withdrawBounty((int32,int32,bytes32))");
-    primodiumWorld.registerFunctionSelector(systemResource, "upgradeForBounty(address,(int32,int32,bytes32))");
+    // primodiumWorld.registerFunctionSelector(systemResource, "depositBounty((int32,int32,bytes32))");
+    // primodiumWorld.registerFunctionSelector(systemResource, "withdrawBounty((int32,int32,bytes32))");
+    // primodiumWorld.registerFunctionSelector(systemResource, "upgradeForBounty(address,(int32,int32,bytes32))");
     console.log(
-      "Alice successfully registered the upgradeBounty namespace, UpgradeBounty table, and UpgrBounSystem contract to the Admin's world address."
+      "Alice successfully registered the upgradeBounty namespace, UpgradeBounty table, and YakuzaRevengeSystem contract to the Admin's world address."
     );
 
     vm.stopPrank();

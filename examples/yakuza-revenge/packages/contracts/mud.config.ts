@@ -1,7 +1,7 @@
 import { mudConfig } from "@latticexyz/world/register";
 
 export default mudConfig({
-  namespace: "yakuza-revenge",
+  namespace: "yakuzaRevenge",
   systems: {
     YakuzaRevengeSystem: {
       openAccess: true,

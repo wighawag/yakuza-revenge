@@ -26,20 +26,22 @@ import { BuildingTileKey } from "../libraries/Keys.sol";
  */
 contract YakuzaRevengeSystem is System {
   
-  function sendResources() {
+  function sendResources() external {
     // send the resource from orbit
     // on success if enough iron 
     // => set expiry and owner
   }
 
-  function claim(bytes32 asteroidID) {
+  function claim(bytes32 asteroidID)external {
+    // IFleetMoveSystem.sendFleet
+    // uint64 expiry =
     // if expiry > ttimestamp
     // if owner[asteroidId]
    //if currentOwner != owner
    // send a full fleet to asteroidID orbit
   }
 
-  function finalizeClainm(claimID) {
+  function finalizeClainm(bytes32 claimID) external{
     // send from orbit to ground
   }
 }

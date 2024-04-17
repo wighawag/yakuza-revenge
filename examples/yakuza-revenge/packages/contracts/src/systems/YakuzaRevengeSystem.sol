@@ -7,7 +7,7 @@
 pragma solidity >=0.8.21;
 
 import { System } from "@latticexyz/world/src/System.sol";
-import { YakuzaClaims, IsYakuzaAsteroid,YakuzaServicePendingClaim } from "../codegen/index.sol";
+import { YakuzaClaims, YakuzaClaimsData, IsYakuzaAsteroid, YakuzaServicePendingClaim, YakuzaServicePendingClaimData } from "../codegen/index.sol";
 // import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { WorldResourceIdLib, ROOT_NAMESPACE } from "@latticexyz/world/src/WorldResourceId.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
@@ -98,11 +98,21 @@ contract YakuzaRevengeSystem is System {
           
           address currentAsteroidOwner = OwnedBy.get(asteroidID);
           if (currentAsteroidOwner == member) {
-            // Call the upgradeBuilding function from the World contract
+            claimData.claimed = true;
+            YakuzaClaims.set(asteroidID, claimData);
             ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
-            IPrimodiumWorld(_world()).call(fleetMoveSystemId,
+            bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
               abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
             );
+            bytes32 fleetID = abi.decode(data, (bytes32)); // is that the right  way?
+            
+            // claimID
+            YakuzaServicePendingClaim.set(asteroidID, YakuzaServicePendingClaimData({
+              asteroidID: asteroidID,
+              yakuzaAsteroidID: yakuzaAsteroidID,
+              fleetID: fleetID,
+              sent: false
+            }));
           }
         }
         
@@ -117,5 +127,33 @@ contract YakuzaRevengeSystem is System {
   /// @param claimID claimId representing the pending claim
   function finalizeClainm(bytes32 claimID) external{
     // send from orbit to ground
+    YakuzaServicePendingClaimData memory pendingClaim = YakuzaServicePendingClaim.get(claimID);
+    bytes32 asteroidID = pendingClaim.asteroidID;
+    require(asteroidID != bytes32(0), "no pending claim");
+    require(!pendingClaim.sent, "already sent");
+  
+    pendingClaim.sent = true;
+    ResourceId fleetCombatSystemID = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "IFleetCombatSystem");
+    bytes memory data = IPrimodiumWorld(_world()).call(fleetCombatSystemID,
+      abi.encodeWithSignature("attack(bytes32,bytes32)", pendingClaim.fleetID, asteroidID)
+    );
   }
+
+   /// @notice to call after claim is finalize to return fleet to base if any
+  /// @param claimID claimId representing the pending claim
+  function returnFleet(bytes32 claimID) external{
+    
+    ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
+    bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
+      abi.encodeWithSignature("sendFleet(bytes32,bytes32)", asteroidID, yakuzaAsteroidID)
+    );
+  }
+
+  // function mergeFleet(bytes32 claimID) external{
+    
+  //   ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
+  //   bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
+  //     abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
+  //   );
+  // }
 }

@@ -26,7 +26,9 @@ export default mudConfig({
       },
       valueSchema: {
         asteroidID: "bytes32",
-        fleetID: "bytes32"
+        yakuzaAsteroidID: "bytes32",
+        fleetID: "bytes32",
+        sent: "bool"
       }
     },
 

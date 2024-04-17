@@ -8,7 +8,7 @@ pragma solidity >=0.8.21;
 
 import { System } from "@latticexyz/world/src/System.sol";
 import { YakuzaClaims, YakuzaClaimsData, IsYakuzaAsteroid, YakuzaServicePendingClaim, YakuzaServicePendingClaimData } from "../codegen/index.sol";
-// import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
+import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { WorldResourceIdLib, ROOT_NAMESPACE } from "@latticexyz/world/src/WorldResourceId.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { IWorld as IPrimodiumWorld } from "../primodium-codegen/world/IWorld.sol";
@@ -36,7 +36,7 @@ contract YakuzaRevengeSystem is System {
    * @param resourceValue the amount to send as payment
    */
   function sendResources(bytes32 fleetID, bytes32 toProtectAsteroidID, bytes32 yakuzaAsteroidID, uint256 resourceValue) external{
-    IWorld world = _world();
+    IWorld world = IWorld(_world());
     // IWorld(_world).YakuzaRevenge_YakuzaSystem_IsYakuzaAsteroid 
     bytes32 playerEntity = LibHelpers.addressToEntity(_msgSender());
     // check if the player has enough iron
@@ -47,17 +47,19 @@ contract YakuzaRevengeSystem is System {
 
 
     uint256[] memory resourceCounts = new uint256[](2);
-    resourceCounts[0] = EResource.Iron;
+    resourceCounts[0] = uint256(EResource.Iron);
     resourceCounts[1] = resourceValue;
 
 
     // transfer the resources from the player to the yakuzaAsteroid
-    require(IFleetMoveSystem.transferResourcesFromFleetToSpaceRock(fleetID, yakuzaAsteroidID, resourceCounts),
-      "Failed to transfer resources from fleet to space rock");
+    
+    ResourceId fleetTransferSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetTransferSys");
+    IPrimodiumWorld(_world()).call(fleetTransferSystemId,
+      abi.encodeWithSignature("transferResourcesFromFleetToSpaceRock(bytes32,bytes32,uint256[])", fleetID, yakuzaAsteroidID, resourceCounts));
 
-    uint64 extra = block.timestamp + 1 days * (resourceValue);
+    uint64 extra = uint64(block.timestamp + 1 days * (resourceValue));
 
-    address asteroidOwner = OwnedBy.get(toProtectAsteroidID);
+    address asteroidOwner = address(uint160(uint256(OwnedBy.get(toProtectAsteroidID))));
     
     // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
     YakuzaClaimsData memory data = YakuzaClaims.get(toProtectAsteroidID);
@@ -74,7 +76,7 @@ contract YakuzaRevengeSystem is System {
   function notifyOwnership(bytes32 asteroidID) external {
 
     StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
-    address asteroidOwner = OwnedBy.get(asteroidID);
+    address asteroidOwner = address(uint160(uint256(OwnedBy.get(asteroidID))));
 
     YakuzaClaimsData memory data = YakuzaClaims.get(asteroidID);
     require(data.owner == asteroidOwner && data.expiry > block.timestamp, "claim not owned");
@@ -98,7 +100,8 @@ contract YakuzaRevengeSystem is System {
     require(!claimData.claimed, "already claimed");
 
     address member = claimData.owner;  
-    address currentAsteroidOwner = OwnedBy.get(asteroidID);
+    address currentAsteroidOwner = address(uint160(uint256(OwnedBy.get(asteroidID))));
+
     require(currentAsteroidOwner != member, "asteroid not lost");
 
     claimData.claimed = true;

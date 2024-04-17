@@ -1,39 +1,34 @@
 import { mudConfig } from "@latticexyz/world/register";
 
 export default mudConfig({
-  namespace: "upgradeBounty",
+  namespace: "yakuza-revenge",
   systems: {
-    UpgrBounSystem: {
+    YakuzaRevengeSystem: {
       openAccess: true,
-      name: "UpgrBounSystem",
+      name: "YakuzaRevengeSystem",
       // deposits and withdrawals track the depositor and amount
     },
   },
   tables: {
-    UpgradeBounty: {
+    YakuzaServiceExpiry: {
       keySchema: {
-        depositorEntity: "bytes32",
-        buildingEntity: "bytes32",
+        asteroid: "bytes32",
       },
-      valueSchema: "uint256",
+      valueSchema: {
+        expiry: "uint64",
+        owner: "address"
+      }
+    },
+    YakuzaServicePendingClaim: {
+      keySchema: {
+        claimID: "bytes32",
+      },
+      valueSchema: {
+        asteroidID: "bytes32",
+        fleetID: "bytes32"
+      }
     },
 
     /* --------------------------------- Common --------------------------------- */
-
-    Position: {
-      keySchema: { entity: "bytes32" },
-      valueSchema: {
-        x: "int32",
-        y: "int32",
-        parent: "bytes32",
-      },
-    },
-
-    OwnedBy: {
-      keySchema: { entity: "bytes32" },
-      valueSchema: {
-        value: "bytes32",
-      },
-    },
   },
 });

@@ -8,7 +8,7 @@ pragma solidity >=0.8.21;
 
 import { System } from "@latticexyz/world/src/System.sol";
 import { PositionData } from "../codegen/index.sol";
-import { UpgradeBounty } from "../codegen/index.sol";
+import { YakuzaServiceExpiry } from "../codegen/index.sol";
 import { OwnedBy } from "../codegen/index.sol";
 import { IWorld } from "../codegen/world/IWorld.sol";
 import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
@@ -33,7 +33,12 @@ contract YakuzaRevengeSystem is System {
   }
 
   function claim(bytes32 asteroidID)external {
+    Iworld world = IWorld(_world());
+    ResourceId namespaceResource = WorldResourceIdLib.encodeNamespace(bytes14("yakuzaRevenge"));
+
+    world.sendFleet(namespaceResource, _msgSender(), bountyValue);
     // IFleetMoveSystem.sendFleet
+    uint64 expiry = YakuzaServiceExpiry.get(asteroidID);
     // uint64 expiry =
     // if expiry > ttimestamp
     // if owner[asteroidId]

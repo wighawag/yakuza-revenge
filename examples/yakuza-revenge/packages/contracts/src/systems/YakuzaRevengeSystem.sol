@@ -90,36 +90,33 @@ contract YakuzaRevengeSystem is System {
     StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
     Iworld world = IWorld(_world());
 
-    if (IsYakuzaAsteroid.get(yakuzaAsteroidID)) {
-      YakuzaClaimsData memory claimData = YakuzaClaims.get(asteroidID);
-      if (claimData.expiry  > block.timestamp() && !claimData.claimed) {
-        address member = claimData.owner;
-        if (member == _msgSender()) {
-          
-          address currentAsteroidOwner = OwnedBy.get(asteroidID);
-          if (currentAsteroidOwner == member) {
-            claimData.claimed = true;
-            YakuzaClaims.set(asteroidID, claimData);
-            ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
-            bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
-              abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
-            );
-            bytes32 fleetID = abi.decode(data, (bytes32)); // is that the right  way?
-            
-            // claimID
-            YakuzaServicePendingClaim.set(asteroidID, YakuzaServicePendingClaimData({
-              asteroidID: asteroidID,
-              yakuzaAsteroidID: yakuzaAsteroidID,
-              fleetID: fleetID,
-              sent: false
-            }));
-          }
-        }
-        
-      }
-    }
-   
+    require(IsYakuzaAsteroid.get(yakuzaAsteroidID), "not yakuza");
     
+    YakuzaClaimsData memory claimData = YakuzaClaims.get(asteroidID);
+    
+    require(claimData.expiry  > block.timestamp(), "expired");
+    require(!claimData.claimed, "already claimed");
+
+    address member = claimData.owner;  
+    address currentAsteroidOwner = OwnedBy.get(asteroidID);
+    require(currentAsteroidOwner != member, "asteroid not lost");
+
+    claimData.claimed = true;
+    YakuzaClaims.set(asteroidID, claimData);
+    ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
+    bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
+      abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
+    );
+    bytes32 fleetID = abi.decode(data, (bytes32)); // is that the right  way?
+    
+    // claimID
+    YakuzaServicePendingClaim.set(asteroidID, YakuzaServicePendingClaimData({
+      asteroidID: asteroidID,
+      yakuzaAsteroidID: yakuzaAsteroidID,
+      fleetID: fleetID,
+      sent: false
+    }));
+
   }
 
 
@@ -149,11 +146,17 @@ contract YakuzaRevengeSystem is System {
     );
   }
 
+  // should be called on return ?
   // function mergeFleet(bytes32 claimID) external{
     
   //   ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
   //   bytes memory data = IPrimodiumWorld(_world()).call(fleetMoveSystemId,
   //     abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
   //   );
+  // }
+
+
+  // function spawnYakuza() external {
+
   // }
 }

@@ -15,7 +15,7 @@ export default mudConfig({
         asteroid: "bytes32",
       },
       valueSchema: {
-        expiry: "uint64",
+        expiry: "uint256",
         owner: "address"
       }
     },
@@ -28,6 +28,15 @@ export default mudConfig({
         fleetID: "bytes32"
       }
     },
+
+    IsYakuzaAsteroid: {
+      keySchema: {
+        asteroid: "bytes32",
+      },
+      valueSchema: {
+        base: "bool",
+      }
+    }
 
     /* --------------------------------- Common --------------------------------- */
   },

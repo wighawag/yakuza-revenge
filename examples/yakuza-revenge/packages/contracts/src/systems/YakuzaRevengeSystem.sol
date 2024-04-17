@@ -18,6 +18,10 @@ import { IWorld as IPrimodiumWorld } from "../primodium-codegen/world/IWorld.sol
 import { LibHelpers } from "../libraries/LibHelpers.sol";
 import { BuildingTileKey } from "../libraries/Keys.sol";
 
+import { ResourceCount } from "../codegen/index.sol";
+import { EResource } from "../codegen/common.sol";
+import {IFleetTransSystem} from "../primodium-codegen/world/IFleetMoveSystem.sol";
+
 /**
  * @dev A contract that handles upgrade bounties for buildings in a world system.
  * @notice Building owner must delegate to this contract to upgrade their building
@@ -26,10 +30,54 @@ import { BuildingTileKey } from "../libraries/Keys.sol";
  */
 contract YakuzaRevengeSystem is System {
   
-  function sendResources() external {
-    // send the resource from orbit
-    // on success if enough iron 
-    // => set expiry and owner
+  
+  /**
+   * @dev Send the resouce from orbit. On success if enough iron. Then, set expiry.
+   */
+  function sendResources(bytes32 FleetID, bytes32 yakuzaAsteroidID, uint256 resourceValue) {
+
+    // EResource.Iron;
+
+    // function transferResourcesFromFleetToSpaceRock(
+    //   bytes32 fleetId,
+    //   bytes32 spaceRock,
+    //   uint256[] calldata resourceCounts
+    // ) external;
+
+    IWorld world = _world();
+    // IWorld(_world).YakuzaRevenge_YakuzaSystem_IsYakuzaAsteroid 
+
+    bytes32 playerEntity = LibHelpers.addressToEntity(_msgSender());
+
+
+    // check if the player has enough iron
+    require(IWorld(_world).Primodium_PrimodiumSystem_ResourceCount.get(playerEntity, EResource.Iron) > resourceValue, "You don't have enough iron");
+
+
+    // check yakuzaAsteroidID is owned by no one or yakuza contract.
+    if (YakuzaAsteroid.get(yakuzaAsteroidID) == false) {
+      // check if the asteroid is free
+      require(IsFleetEmpty(yakuzaAsteroidID), "That asteroid is not empty");
+      
+      // set the asteroid to be owned by the yakuza
+      IsYakuzaAsteroid.set(yakuzaAsteroidID, true);
+    }
+
+    require(IsYakuzaAsteroid.get(yakuzaAsteroidID) == true, "YakuzaAsteroid is not owned by Yakuza");
+
+
+    uint256[] memory resourceCounts = new uint256[](2);
+    resourceCounts[0] = EResource.Iron;  // 一つ目のリソースのカウント
+    resourceCounts[1] = resourceValue; // 二つ目のリソースのカウント
+    
+    // transfer the resources from the player to the yakuzaAsteroid
+    require(IFleetTransSystem.transferResourcesFromFleetToSpaceRock(FleetID, yakuzaAsteroidID, resourceCounts),
+      "Failed to transfer resources from fleet to space rock");
+
+    uint64 expiry = block.timestamp + 1 days * (resourceValue);
+
+    // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
+    YakuzaServiceExpiry.set(yakuzaAsteroid, expiry, playerEntity);
   }
 
   function claim(bytes32 asteroidID)external {

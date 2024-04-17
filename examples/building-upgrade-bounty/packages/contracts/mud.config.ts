@@ -10,30 +10,16 @@ export default mudConfig({
     },
   },
   tables: {
-    UpgradeBounty: {
+    YakuzaServiceExpiry: {
       keySchema: {
-        depositorEntity: "bytes32",
-        buildingEntity: "bytes32",
+        asteroid: "bytes32",
       },
-      valueSchema: "uint256",
+      valueSchema: {
+        expiry: "uint64",
+        owner: "address"
+      }
     },
 
     /* --------------------------------- Common --------------------------------- */
-
-    Position: {
-      keySchema: { entity: "bytes32" },
-      valueSchema: {
-        x: "int32",
-        y: "int32",
-        parent: "bytes32",
-      },
-    },
-
-    OwnedBy: {
-      keySchema: { entity: "bytes32" },
-      valueSchema: {
-        value: "bytes32",
-      },
-    },
   },
 });

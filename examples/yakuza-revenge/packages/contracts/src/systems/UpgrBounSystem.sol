@@ -49,6 +49,23 @@ contract UpgrBounSystem is System {
     UpgradeBounty.set(playerEntity, buildingEntity, bountyValue);
   }
 
+  function sendResources() {
+    // send the resource from orbit
+    // on success if enough iron 
+    // => set expiryt
+  }
+
+  function claim(bytes32 asteroidID) {
+    // if expiry > ttimestamp
+    // if owner[asteroidId]
+   //if currentOwner != owner
+   // send a full fleet to asteroidID orbit
+  }
+
+  function finalizeClainm(claimID) {
+    // send from orbit to ground
+  }
+
   /**
    * @dev Withdraws the upgrade bounty for the building at the specified coordinate.
    * @param coord The coordinate of the building.

@@ -29,7 +29,7 @@ contract YakuzaRevengeSystem is System {
   function sendResources() {
     // send the resource from orbit
     // on success if enough iron 
-    // => set expiryt
+    // => set expiry and owner
   }
 
   function claim(bytes32 asteroidID) {

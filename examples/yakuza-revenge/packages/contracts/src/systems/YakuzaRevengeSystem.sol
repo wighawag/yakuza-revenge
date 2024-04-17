@@ -122,7 +122,7 @@ contract YakuzaRevengeSystem is System {
 
   /// @notice to call after the fleet arrive in orbit (as a result of calling `claim`)
   /// @param claimID claimId representing the pending claim
-  function finalizeClainm(bytes32 claimID) external{
+  function finalizeClaim(bytes32 claimID) external{
     // send from orbit to ground
     YakuzaServicePendingClaimData memory pendingClaim = YakuzaServicePendingClaim.get(claimID);
     bytes32 asteroidID = pendingClaim.asteroidID;

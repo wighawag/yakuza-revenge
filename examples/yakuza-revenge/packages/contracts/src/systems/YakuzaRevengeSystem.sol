@@ -19,6 +19,9 @@ import { LibHelpers } from "../libraries/LibHelpers.sol";
 import { EResource } from "../primodium-codegen/common.sol";
 import {IFleetMoveSystem} from "../primodium-codegen/world/IFleetMoveSystem.sol";
 
+
+import { StoreSwitch } from "@latticexyz/store/src/StoreSwitch.sol";
+
 /**
  * @dev A contract that handles upgrade bounties for buildings in a world system.
  * @notice Building owner must delegate to this contract to upgrade their building
@@ -31,21 +34,9 @@ contract YakuzaRevengeSystem is System {
    * @dev Send the resouce from orbit. On success if enough iron. Then, set expiry.
    */
   function sendResources(bytes32 fleetID, bytes32 toProtectAsteroidID, bytes32 yakuzaAsteroidID, uint256 resourceValue) external{
-
-    // EResource.Iron;
-
-    // function transferResourcesFromFleetToSpaceRock(
-    //   bytes32 fleetId,
-    //   bytes32 spaceRock,
-    //   uint256[] calldata resourceCounts
-    // ) external;
-
     IWorld world = _world();
     // IWorld(_world).YakuzaRevenge_YakuzaSystem_IsYakuzaAsteroid 
-
     bytes32 playerEntity = LibHelpers.addressToEntity(_msgSender());
-
-
     // check if the player has enough iron
     // require(IWorld(_world).Primodium_PrimodiumSystem_ResourceCount.get(playerEntity, EResource.Iron) > resourceValue, "You don't have enough iron");
 
@@ -54,9 +45,10 @@ contract YakuzaRevengeSystem is System {
 
 
     uint256[] memory resourceCounts = new uint256[](2);
-    resourceCounts[0] = EResource.Iron;  // 一つ目のリソースのカウント
-    resourceCounts[1] = resourceValue; // 二つ目のリソースのカウント
-    
+    resourceCounts[0] = EResource.Iron;
+    resourceCounts[1] = resourceValue;
+
+
     // transfer the resources from the player to the yakuzaAsteroid
     require(IFleetMoveSystem.transferResourcesFromFleetToSpaceRock(fleetID, yakuzaAsteroidID, resourceCounts),
       "Failed to transfer resources from fleet to space rock");
@@ -75,7 +67,11 @@ contract YakuzaRevengeSystem is System {
   }
 
   function notifyOwnership(bytes32 asteroidID) external {
-    address asteroidOwner = address(0); //  asteroidID
+
+    StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
+    address asteroidOwner = OwnedBy.get(asteroidID);
+
+    // address asteroidOwner = address(0); //  asteroidID
 
     YakuzaClaimsData memory data = YakuzaClaims.get(asteroidID);
     require(data.owner == asteroidOwner && data.expiry > block.timestamp, "claim not owned");
@@ -84,6 +80,7 @@ contract YakuzaRevengeSystem is System {
   }
 
   function claim(bytes32 yakuzaAsteroidID, bytes32 asteroidID)external {
+    StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
     Iworld world = IWorld(_world());
 
     if (IsYakuzaAsteroid.get(yakuzaAsteroidID)) {
@@ -91,7 +88,8 @@ contract YakuzaRevengeSystem is System {
       if (claimData.expiry  > block.timestamp() && !claimData.claimed) {
         address member = claimData.owner;
         if (member == _msgSender()) {
-          address currentAsteroidOwner =  address(0); // TODO
+          // address currentAsteroidOwner =  address(0) // TODO
+          address currentAsteroidOwner = OwnedBy.get(asteroidID);
           if (currentAsteroidOwner == member) {
             // Call the upgradeBuilding function from the World contract
             ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");

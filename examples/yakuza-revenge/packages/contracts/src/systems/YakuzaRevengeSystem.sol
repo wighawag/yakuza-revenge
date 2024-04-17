@@ -63,13 +63,22 @@ contract YakuzaRevengeSystem is System {
 
     uint64 extra = block.timestamp + 1 days * (resourceValue);
 
-    address asteroidOnwer = address(0); //  toProtectAsteroidID
+    address asteroidOwner = address(0); //  toProtectAsteroidID
     
-
     // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
     YakuzaClaimsData memory data = YakuzaClaims.get(toProtectAsteroidID);
-    data.expiry = expiry + extra;
-    data.owner = asteroidOnwer;
+    require(data.owner == asteroidOwner || data.owner == address(0) || data.expiry < block.timestamp, "claim already owned");
+    data.expiry = data.expiry < block.timestamp ? block.timestamp + extra : expiry + extra;
+    data.owner = asteroidOwner;
+    data.claimed = false;
+    YakuzaClaims.set(asteroidID, data);
+  }
+
+  function notifyOwnership(bytes32 asteroidID) external {
+    address asteroidOwner = address(0); //  asteroidID
+
+    YakuzaClaimsData memory data = YakuzaClaims.get(asteroidID);
+    require(data.owner == asteroidOwner && data.expiry > block.timestamp, "claim not owned");
     data.claimed = false;
     YakuzaClaims.set(asteroidID, data);
   }

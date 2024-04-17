@@ -23,15 +23,17 @@ import {IFleetMoveSystem} from "../primodium-codegen/world/IFleetMoveSystem.sol"
 import { StoreSwitch } from "@latticexyz/store/src/StoreSwitch.sol";
 
 /**
- * @dev A contract that handles upgrade bounties for buildings in a world system.
- * @notice Building owner must delegate to this contract to upgrade their building
- * @notice Technically users can deposit upgrade bounties at any coordinate, regardless of building existence
- * @notice Technically Alice can issue an upgrade bounty at Bob's building, and Bob can claim it
+ * @notice A contract that let player share a fleet army under control of a smart contract 
+ * @notice THis can be used to cpature an asteroid back
  */
 contract YakuzaRevengeSystem is System {
 
   /**
-   * @dev Send the resouce from orbit. On success if enough iron. Then, set expiry.
+   * @notice Send the resouce from orbit. On success if enough iron. Then, set expiry.
+   * @param fleetID The fleet already in orbit, used to send the resources as payment for Yakuza service
+   * @param toProtectAsteroidID the asteroid who get the protection
+   * @param yakuzaAsteroidID the yakuza asteroid that own the protection fleets
+   * @param resourceValue the amount to send as payment
    */
   function sendResources(bytes32 fleetID, bytes32 toProtectAsteroidID, bytes32 yakuzaAsteroidID, uint256 resourceValue) external{
     IWorld world = _world();
@@ -55,7 +57,7 @@ contract YakuzaRevengeSystem is System {
 
     uint64 extra = block.timestamp + 1 days * (resourceValue);
 
-    address asteroidOwner = address(0); //  toProtectAsteroidID
+    address asteroidOwner = OwnedBy.get(toProtectAsteroidID);
     
     // record the depositor entity, yakuzaEntity, and value in the YakuzaRevenge table
     YakuzaClaimsData memory data = YakuzaClaims.get(toProtectAsteroidID);
@@ -73,8 +75,6 @@ contract YakuzaRevengeSystem is System {
 
     StoreSwitch.setStoreAddress("0xd5d9aad645671a285d1cadf8e68aef7d74a8a7d0"); // sets the store address to the world address
     address asteroidOwner = OwnedBy.get(asteroidID);
-
-    // address asteroidOwner = address(0); //  asteroidID
 
     YakuzaClaimsData memory data = YakuzaClaims.get(asteroidID);
     require(data.owner == asteroidOwner && data.expiry > block.timestamp, "claim not owned");
@@ -95,7 +95,7 @@ contract YakuzaRevengeSystem is System {
       if (claimData.expiry  > block.timestamp() && !claimData.claimed) {
         address member = claimData.owner;
         if (member == _msgSender()) {
-          // address currentAsteroidOwner =  address(0) // TODO
+          
           address currentAsteroidOwner = OwnedBy.get(asteroidID);
           if (currentAsteroidOwner == member) {
             // Call the upgradeBuilding function from the World contract

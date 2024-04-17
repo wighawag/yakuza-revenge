@@ -7,7 +7,7 @@
 pragma solidity >=0.8.21;
 
 import { System } from "@latticexyz/world/src/System.sol";
-import { YakuzaServiceExpiry } from "../codegen/index.sol";
+import { YakuzaServiceExpiry, IsYakuzaAsteroid,YakuzaServicePendingClaim } from "../codegen/index.sol";
 // import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 import { WorldResourceIdLib, ROOT_NAMESPACE } from "@latticexyz/world/src/WorldResourceId.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
@@ -76,18 +76,28 @@ contract YakuzaRevengeSystem is System {
     YakuzaServiceExpiry.set(yakuzaAsteroid, expiry, playerEntity);
   }
 
-  function claim(bytes32 asteroidID)external {
+  function claim(bytes32 yakuzaAsteroidID, bytes32 asteroidID)external {
     Iworld world = IWorld(_world());
-    ResourceId namespaceResource = WorldResourceIdLib.encodeNamespace(bytes14("yakuzaRevenge"));
 
-    world.sendFleet(namespaceResource, _msgSender(), bountyValue);
-    // IFleetMoveSystem.sendFleet
-    uint64 expiry = YakuzaServiceExpiry.get(asteroidID);
-    // uint64 expiry =
-    // if expiry > ttimestamp
-    // if owner[asteroidId]
-   //if currentOwner != owner
-   // send a full fleet to asteroidID orbit
+    if (IsYakuzaAsteroid.get(yakuzaAsteroidID)) {
+      YakuzaServiceExpiryData memory expiryData = YakuzaServiceExpiry.get(asteroidID);
+      if (expiryData.expiry  > block.timestamp()) {
+        address member = expiryData.owner;
+        if (member == _msgSender()) {
+          address currentAsteroidOwner =  address(0); // TODO
+          if (currentAsteroidOwner == member) {
+            // Call the upgradeBuilding function from the World contract
+            ResourceId fleetMoveSystemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, ROOT_NAMESPACE, "FleetMoveSystem");
+            IPrimodiumWorld(_world()).call(fleetMoveSystemId,
+              abi.encodeWithSignature("sendFleet(bytes32,bytes32)", yakuzaAsteroidID, asteroidID)
+            );
+          }
+        }
+        
+      }
+    }
+   
+    
   }
 
   function finalizeClainm(bytes32 claimID) external{
